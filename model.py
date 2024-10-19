@@ -197,7 +197,7 @@ def predict_with_best_model(best_model_pipeline, df):
     print(f"\nPredicted output: {prediction[0]}")
 
 # Example usage
-data_path = '/content/archive (16).zip'  # Provide your dataset path
+data_path = 'content/Sample.csv'  # Provide your dataset path
 
 # Run the automated regression analysis and get the best model
 best_model_pipeline, df = automated_regression_analysis_best_model(data_path, test_size=0.2, k_best_features=5)
