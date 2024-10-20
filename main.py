@@ -3,12 +3,13 @@ import pandas as pd
 from io import StringIO
 import uvicorn
 from fastapi.responses import HTMLResponse
-
-# Import the ML model function
-# Assuming automated_regression_analysis_best_model is in model.py
-from model import automated_regression_analysis_best_model
+import os
+from fastapi.staticfiles import StaticFiles
+from model import automated_regression_analysis_best_model, visualize_data
+import matplotlib.pyplot as plt
 
 app = FastAPI()
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 @app.get("/", response_class=HTMLResponse)
 async def main():
@@ -86,17 +87,25 @@ async def upload_csv(file: UploadFile = File(...)):
     csv_data = StringIO(content.decode('utf-8'))
     df = pd.read_csv(csv_data)
 
-    # Save the DataFrame as a CSV file locally to pass to the model (optional)
+    # Save the DataFrame as a CSV file locally to pass to the model
     temp_file_path = "temp_data.csv"
     df.to_csv(temp_file_path, index=False)
 
     # Run the model on the uploaded CSV file
     best_model_pipeline, processed_df = automated_regression_analysis_best_model(temp_file_path, test_size=0.2, k_best_features=5)
 
-    # Return the best model result and print it on the HTML page
+    # Save visualization as an image file
+    image_path = "static/revenue_plot.png"
+    visualize_data(df)  # This function generates the plot
+    if os.path.exists(image_path):
+        os.remove(image_path)  # Remove the old image if it exists
+
+    plt.savefig(image_path)  # Save the generated plot as a PNG file
+
+    # Return the best model result and display it on the HTML page
     result = f"Best Model: {best_model_pipeline}"
 
-    # Generate an HTML response to show the result
+    # Generate an HTML response to show the result along with the image
     html_content = f"""
     <!DOCTYPE html>
     <html lang="en">
@@ -128,6 +137,12 @@ async def upload_csv(file: UploadFile = File(...)):
                 text-align: center;
                 margin-bottom: 20px;
             }}
+            img {{
+                display: block;
+                margin: 0 auto 20px auto;
+                max-width: 100%;
+                height: auto;
+            }}
             p {{
                 font-size: 18px;
                 text-align: center;
@@ -138,6 +153,7 @@ async def upload_csv(file: UploadFile = File(...)):
     <body>
         <div class="container">
             <h1>CSV Processing Result</h1>
+            <img src="/static/revenue_plot.png" alt="Revenue Plot">
             <p>{result}</p>
         </div>
     </body>
